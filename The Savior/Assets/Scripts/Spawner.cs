@@ -8,43 +8,102 @@ public class Spawner : MonoBehaviour
     GameObject followerPrefab;
     [SerializeField]
     float spawnInterval = 5.0f;
-    bool spawnHold = false;
     [SerializeField]
     GameObject[] spawnGroupLocations;
     [SerializeField]
     int initialSpawnCount = 10;
     [SerializeField]
+    int spawnCount = 0;
+    [SerializeField]
     int maxSpawnCount = 20;
     [SerializeField]
     float spawnLocationVariance = 5f;
 
-    Follower[] activeFollowers;
-    // Start is called before the first frame update
-    void Start()
+    [SerializeField]
+    public List<Follower> followers = new List<Follower> { };
+
+    [SerializeField]
+    List<string> followerNamesMale = new List<string>{ "John", "James", "Carl", "Frank", "Lou", "Jessop", "Harold" };
+    [SerializeField]
+    List<string> followerNamesFemale = new List<string>{ "Jane", "Carla", "Maisie", "Frida", "Blair", "Lisa", "Fran" };
+
+    [SerializeField]
+    bool isMale = true;
+
+    [SerializeField]
+    List<string> followerSurnames = new List<string>{ "Voight", "Smith", "Barnaby", "Fredrickson", "Bobby", "Dubois", "Stone" };
+
+    string GenerateFollowerName()
     {
-        for(int i = 0; i < initialSpawnCount; i++)
-        {
-            GameObject followerGhost = Instantiate(followerPrefab, spawnGroupLocations[Random.Range(0, spawnGroupLocations.Length - 1)].transform);
-            followerGhost.transform.localPosition += new Vector3(Random.Range(-spawnLocationVariance, spawnLocationVariance), Random.Range(-spawnLocationVariance, spawnLocationVariance), 0f);
-        }
+        return gameObject.name = (isMale ? followerNamesMale[Random.Range(0, followerNamesMale.Count)] : followerNamesFemale[Random.Range(0, followerNamesFemale.Count)]) + " of House " + followerSurnames[Random.Range(0, followerSurnames.Count)];
     }
 
-    // Update is called once per frame
-    void Update()
+    private void OnEnable()
     {
-        if(!spawnHold && maxSpawnCount > 0)
-            StartCoroutine(IntervalSpawn());
+        Actions.OnGameStarted += OnStart;
+        Actions.OnGameOver += OnGameOver;
+        /*
+        Actions.OnSpawn += OnSpawn;
+        Actions.OnPreach += OnPreach;
+        Actions.OnUnpreach += OnUnpreach;
+        Actions.OnTouch += OnTouch;
+        */
+    }
+
+    private void OnDisable()
+    {
+        Actions.OnGameStarted -= OnStart;
+        Actions.OnGameOver -= OnGameOver;
+        /*
+        Actions.OnSpawn -= OnSpawn;
+        Actions.OnPreach -= OnPreach;
+        Actions.OnUnpreach -= OnUnpreach;
+        Actions.OnTouch -= OnTouch;
+        */
+    }
+
+    // Start is called before the first frame update
+    void OnStart()
+    {
+        if(followers.Count > 0)
+        {
+            foreach(Follower f in followers)
+            {
+                Destroy(f.gameObject);
+            }
+            followers.Clear();
+        }
+        for(int i = 0; i < initialSpawnCount; i++)
+        {
+            Spawn();
+        }
+        StartCoroutine(IntervalSpawn());
     }
 
     IEnumerator IntervalSpawn()
     {
-        spawnHold = true;
-        
+        if (spawnCount < maxSpawnCount)
+        {
+            yield return new WaitForSeconds(spawnInterval);
+
+            Spawn();
+
+            StartCoroutine(IntervalSpawn());
+        }
+    }
+
+    void Spawn()
+    {
         GameObject followerGhost = Instantiate(followerPrefab, spawnGroupLocations[Random.Range(0, spawnGroupLocations.Length - 1)].transform);
         followerGhost.transform.localPosition += new Vector3(Random.Range(-spawnLocationVariance, spawnLocationVariance), Random.Range(-spawnLocationVariance, spawnLocationVariance), 0f);
-        maxSpawnCount -= 1;
+        followerGhost.name = GenerateFollowerName();
+        followerGhost.GetComponent<Follower>().isMale = isMale;
+        followers.Add(followerGhost.GetComponent<Follower>());
+        spawnCount += 1;
+    }
 
-        yield return new WaitForSeconds(spawnInterval);
-        spawnHold = false;
+    void OnGameOver()
+    {
+        StopCoroutine(IntervalSpawn());
     }
 }

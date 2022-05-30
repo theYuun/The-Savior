@@ -5,11 +5,13 @@ TagManager:
   serializedVersion: 2
   tags:
   - Follower
+  - Spawner
+  - ScoreCard
   layers:
   - Default
   - TransparentFX
   - Ignore Raycast
-  - 
+  - c_Follower
   - Water
   - UI
   - 
